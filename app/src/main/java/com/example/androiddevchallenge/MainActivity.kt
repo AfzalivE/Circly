@@ -24,8 +24,12 @@ import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
@@ -33,6 +37,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.rotate
@@ -86,19 +91,31 @@ fun MyApp() {
 
     Surface(color = MaterialTheme.colors.background) {
         val totalTime = 5000L
-        TickMarks(timeLeft = timeLeft!!, totalTime = totalTime) {
-            timerViewModel.startCountdown(totalTime)
+        Column(
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            TickMarks(timeLeft = timeLeft!!, totalTime = totalTime)
+            Button(onClick = {
+                timerViewModel.startCountdown(totalTime)
+            }) {
+                Text("Toggle")
+            }
         }
     }
 }
 
 @Composable
-fun TickMarks(timeLeft: Long, totalTime: Long, onCountdownStart: () -> Unit) {
+fun TickMarks(timeLeft: Long, totalTime: Long) {
     val numTicks = 60
     val timePerTick = totalTime / numTicks
     val timeElapsed = totalTime - timeLeft
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(1f)
+    ) {
         for (i in 0 until numTicks) {
             val tickStart = timePerTick * i
             val tickEnd = timePerTick * (i + 1)
@@ -115,12 +132,6 @@ fun TickMarks(timeLeft: Long, totalTime: Long, onCountdownStart: () -> Unit) {
                 lineAngle = lineAngle
             )
         }
-    }
-
-    Button(onClick = {
-        onCountdownStart()
-    }) {
-        Text("Toggle")
     }
 }
 
