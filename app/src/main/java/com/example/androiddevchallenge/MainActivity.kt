@@ -85,7 +85,7 @@ fun MyApp() {
     val timeLeft by timerViewModel.timeLeftLiveData.observeAsState()
 
     Surface(color = MaterialTheme.colors.background) {
-        val totalTime = 10000L
+        val totalTime = 5000L
         TickMarks(timeLeft = timeLeft!!, totalTime = totalTime) {
             timerViewModel.startCountdown(totalTime)
         }
@@ -102,16 +102,13 @@ fun TickMarks(timeLeft: Long, totalTime: Long, onCountdownStart: () -> Unit) {
         for (i in 0 until numTicks) {
             val tickStart = timePerTick * i
             val tickEnd = timePerTick * (i + 1)
-            val lineAngle by
-                animateFloatAsState(if (timeElapsed < tickStart) {
-                    0f
-                } else {
-                    ((timeElapsed.toFloat() / tickEnd) * 90f).coerceIn(0f, 90f)
-                }, animationSpec = tween(easing = LinearEasing))
-
-            Log.d("MainActivity", "lineAngle: $lineAngle")
-
-            // val lineAngle by animateFloatAsState(if (timeLeft / 1000 <= i) 90f else 0f)
+            val lineAngle by animateFloatAsState(
+                if (timeElapsed >= tickStart) 90f else 0f,
+                animationSpec = tween(
+                    easing = LinearEasing,
+                    durationMillis = (tickEnd - tickStart).toInt()
+                )
+            )
 
             TickMark(
                 angle = i * -6,
@@ -161,7 +158,7 @@ fun TickMark(
                         Color.Green,
                         center + startPos,
                         center + endPos,
-                        10f
+                        15f
                     )
                 }
             }
