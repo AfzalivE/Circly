@@ -16,7 +16,6 @@
 package com.example.androiddevchallenge
 
 import android.os.Bundle
-import android.os.CountDownTimer
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.core.LinearEasing
@@ -36,6 +35,7 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
@@ -45,15 +45,15 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.androiddevchallenge.ui.theme.MyTheme
 import com.example.androiddevchallenge.ui.theme.limeGreen500
+import kotlinx.coroutines.delay
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -71,58 +71,55 @@ class MainActivity : AppCompatActivity() {
     }
 }
 
-class CountDownViewModel : ViewModel() {
-    val timeLeftLiveData = MutableLiveData<Long>()
-    var countDownTimer: CountDownTimer? = null
-
-    fun startCountdown(totalTime: Long) {
-        countDownTimer?.cancel()
-        countDownTimer = object : CountDownTimer(totalTime, 10) {
-            override fun onTick(millisUntilFinished: Long) {
-                timeLeftLiveData.value = millisUntilFinished
-            }
-
-            override fun onFinish() {
-                timeLeftLiveData.value = 0
-            }
-        }.start()
-    }
-}
-
 // Start building your app here!
 @Composable
 fun MyApp() {
     val timerViewModel: CountDownViewModel = viewModel()
-    val timeLeft by timerViewModel.timeLeftLiveData.observeAsState()
+    val countdownState by timerViewModel.timeLeftLiveData.observeAsState()
 
     Surface(
         color = MaterialTheme.colors.background,
         modifier = Modifier.fillMaxSize()
     ) {
-        val totalTime = 10000L
+        val totalTime = 5000L
 
         Column(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            ClockUi(timeLeft = timeLeft ?: totalTime, totalTime = totalTime)
+            ClockUi(countdownState!!)
 
             Button(
                 onClick = {
                     timerViewModel.startCountdown(totalTime)
                 }
             ) {
-                Text("Toggle")
+                Text(stringResource(R.string.start))
             }
+
+            Button(
+                onClick = {
+                    timerViewModel.reset()
+                }
+            ) {
+                Text("Reset")
+            }
+        }
+    }
+
+    LaunchedEffect(key1 = countdownState) {
+        if (countdownState!!.isFinishing) {
+            delay(200)
+            timerViewModel.reset()
         }
     }
 }
 
 @Composable
-fun ClockUi(timeLeft: Long, totalTime: Long) {
+fun ClockUi(countdownState: CountDownViewModel.CountdownState) {
     val numTicks = 60
-    val timePerTick = totalTime / numTicks
-    val timeElapsed = totalTime - timeLeft
+    val timePerTick = countdownState.totalTime / numTicks
+    val timeElapsed = countdownState.totalTime - countdownState.timeLeft
 
     Box(
         contentAlignment = Alignment.Center,
@@ -147,10 +144,8 @@ fun ClockUi(timeLeft: Long, totalTime: Long) {
             )
         }
 
-        val state = TimerState.fromMillis(timeLeft)
-
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            TimerNumbers(state)
+            TimerNumbers(countdownState)
             val annotatedLabel = buildAnnotatedString {
                 pushStyle(style = MaterialTheme.typography.h6.toSpanStyle())
                 append("SEC.")
@@ -167,7 +162,13 @@ fun ClockUi(timeLeft: Long, totalTime: Long) {
 }
 
 @Composable
-private fun TimerNumbers(state: TimerState) {
+private fun TimerNumbers(countdownState: CountDownViewModel.CountdownState) {
+    val state = if (!countdownState.isFinishing) {
+        TimerState.fromMillis(countdownState.timeLeft)
+    } else {
+        TimerState.fromMillis(countdownState.totalTime)
+    }
+
     Row {
         NumberColumn(state.seconds / 10)
         NumberColumn(state.seconds % 10)
@@ -189,27 +190,6 @@ private fun NumberColumn(number: Int) {
         modifier = Modifier.width(48.dp),
         textAlign = TextAlign.Center
     )
-}
-
-data class TimerState(
-    val hours: Int,
-    val minutes: Int,
-    val seconds: Int,
-    val centiseconds: Int
-) {
-    companion object {
-        @OptIn(ExperimentalTime::class)
-        fun fromMillis(millis: Long): TimerState {
-            return millis.milliseconds.toComponents { hours, minutes, seconds, nanoseconds ->
-                TimerState(
-                    hours,
-                    minutes,
-                    seconds,
-                    nanoseconds / 1e7.toInt()
-                )
-            }
-        }
-    }
 }
 
 @Composable
@@ -253,6 +233,27 @@ fun TickMark(
     )
 }
 
+data class TimerState(
+    val hours: Int,
+    val minutes: Int,
+    val seconds: Int,
+    val centiseconds: Int
+) {
+    companion object {
+        @OptIn(ExperimentalTime::class)
+        fun fromMillis(millis: Long): TimerState {
+            return millis.milliseconds.toComponents { hours, minutes, seconds, nanoseconds ->
+                TimerState(
+                    hours,
+                    minutes,
+                    seconds,
+                    nanoseconds / 1e7.toInt()
+                )
+            }
+        }
+    }
+}
+
 @Preview("Light Theme", widthDp = 360, heightDp = 640)
 @Composable
 fun LightPreview() {
@@ -268,3 +269,4 @@ fun DarkPreview() {
         MyApp()
     }
 }
+
