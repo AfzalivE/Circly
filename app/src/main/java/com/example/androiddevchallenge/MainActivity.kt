@@ -108,7 +108,7 @@ fun MyApp() {
     }
 
     LaunchedEffect(key1 = countdownState) {
-        if (countdownState!!.isFinishing) {
+        if (countdownState!!.state == CountDownViewModel.TimerState.FINISHED) {
             delay(200)
             timerViewModel.reset()
         }
@@ -127,7 +127,7 @@ fun ClockUi(countdownState: CountDownViewModel.CountdownState) {
             .fillMaxWidth()
             .aspectRatio(1f)
     ) {
-        for (i in 0 until numTicks) {
+        for (i in 1 until numTicks) {
             val tickStart = timePerTick * i
             val tickEnd = timePerTick * (i + 1)
             val lineAngle by animateFloatAsState(
@@ -139,7 +139,7 @@ fun ClockUi(countdownState: CountDownViewModel.CountdownState) {
             )
 
             TickMark(
-                angle = i * -6,
+                angle = (i + 1) * -6,
                 lineAngle = lineAngle
             )
         }
@@ -163,10 +163,10 @@ fun ClockUi(countdownState: CountDownViewModel.CountdownState) {
 
 @Composable
 private fun TimerNumbers(countdownState: CountDownViewModel.CountdownState) {
-    val state = if (!countdownState.isFinishing) {
-        TimerState.fromMillis(countdownState.timeLeft)
+    val state = if (countdownState.state == CountDownViewModel.TimerState.IDLE) {
+        Time.fromMillis(countdownState.timeLeft)
     } else {
-        TimerState.fromMillis(countdownState.totalTime)
+        Time.fromMillis(countdownState.totalTime)
     }
 
     Row {
@@ -233,7 +233,7 @@ fun TickMark(
     )
 }
 
-data class TimerState(
+data class Time(
     val hours: Int,
     val minutes: Int,
     val seconds: Int,
@@ -241,9 +241,9 @@ data class TimerState(
 ) {
     companion object {
         @OptIn(ExperimentalTime::class)
-        fun fromMillis(millis: Long): TimerState {
+        fun fromMillis(millis: Long): Time {
             return millis.milliseconds.toComponents { hours, minutes, seconds, nanoseconds ->
-                TimerState(
+                Time(
                     hours,
                     minutes,
                     seconds,
