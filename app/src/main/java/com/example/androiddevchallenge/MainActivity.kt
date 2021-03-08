@@ -51,6 +51,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.androiddevchallenge.CountDownViewModel.*
 import com.example.androiddevchallenge.ui.theme.MyTheme
 import com.example.androiddevchallenge.ui.theme.limeGreen500
 import kotlinx.coroutines.delay
@@ -75,7 +76,12 @@ class MainActivity : AppCompatActivity() {
 @Composable
 fun MyApp() {
     val timerViewModel: CountDownViewModel = viewModel()
-    val countdownState by timerViewModel.timeLeftLiveData.observeAsState()
+    val countdownState by timerViewModel.timeLeftLiveData.observeAsState(
+        CountdownState(
+            0,
+            0
+        )
+    )
 
     Surface(
         color = MaterialTheme.colors.background,
@@ -84,31 +90,34 @@ fun MyApp() {
         val totalTime = 5000L
 
         Column(
-            verticalArrangement = Arrangement.Center,
+            verticalArrangement = Arrangement.SpaceEvenly,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            ClockUi(countdownState!!)
+            ClockUi(countdownState, totalTime)
 
-            Button(
-                onClick = {
-                    timerViewModel.startCountdown(totalTime)
-                }
+            Row(
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Text(stringResource(R.string.start))
-            }
-
-            Button(
-                onClick = {
-                    timerViewModel.reset()
+                if (countdownState.state === TimerState.STOPPED) {
+                    Button(
+                        onClick = { timerViewModel.startCountdown(totalTime) }
+                    ) {
+                        Text(stringResource(R.string.start))
+                    }
+                } else {
+                    Button(
+                        onClick = { timerViewModel.reset() }
+                    ) {
+                        Text(stringResource(R.string.stop))
+                    }
                 }
-            ) {
-                Text("Reset")
             }
         }
     }
 
     LaunchedEffect(key1 = countdownState) {
-        if (countdownState!!.state == CountDownViewModel.TimerState.FINISHED) {
+        if (countdownState.state === TimerState.FINISHED) {
             delay(200)
             timerViewModel.reset()
         }
@@ -116,7 +125,7 @@ fun MyApp() {
 }
 
 @Composable
-fun ClockUi(countdownState: CountDownViewModel.CountdownState) {
+fun ClockUi(countdownState: CountdownState, totalTime: Long) {
     val numTicks = 60
     val timePerTick = countdownState.totalTime / numTicks
     val timeElapsed = countdownState.totalTime - countdownState.timeLeft
@@ -127,7 +136,7 @@ fun ClockUi(countdownState: CountDownViewModel.CountdownState) {
             .fillMaxWidth()
             .aspectRatio(1f)
     ) {
-        for (i in 1 until numTicks) {
+        for (i in 0 until numTicks) {
             val tickStart = timePerTick * i
             val tickEnd = timePerTick * (i + 1)
             val lineAngle by animateFloatAsState(
@@ -145,7 +154,7 @@ fun ClockUi(countdownState: CountDownViewModel.CountdownState) {
         }
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            TimerNumbers(countdownState)
+            TimerNumbers(countdownState, totalTime)
             val annotatedLabel = buildAnnotatedString {
                 pushStyle(style = MaterialTheme.typography.h6.toSpanStyle())
                 append("SEC.")
@@ -162,11 +171,12 @@ fun ClockUi(countdownState: CountDownViewModel.CountdownState) {
 }
 
 @Composable
-private fun TimerNumbers(countdownState: CountDownViewModel.CountdownState) {
-    val state = if (countdownState.state == CountDownViewModel.TimerState.IDLE) {
-        Time.fromMillis(countdownState.timeLeft)
-    } else {
-        Time.fromMillis(countdownState.totalTime)
+private fun TimerNumbers(countdownState: CountdownState, totalTime: Long) {
+    val state = when (countdownState.state) {
+        TimerState.STARTED -> Time.fromMillis(countdownState.timeLeft)
+        TimerState.RESETTING,
+        TimerState.FINISHED -> Time.fromMillis(0)
+        else -> Time.fromMillis(totalTime)
     }
 
     Row {
@@ -269,4 +279,3 @@ fun DarkPreview() {
         MyApp()
     }
 }
-

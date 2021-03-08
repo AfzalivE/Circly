@@ -11,4 +11,7 @@
       -->
     <string name="app_name">AndroidDevChallenge</string>
     <string name="start">Start</string>
+    <string name="increase">Increase</string>
+    <string name="deccrease">Decrease</string>
+    <string name="stop">Stop</string>
 </resources>
