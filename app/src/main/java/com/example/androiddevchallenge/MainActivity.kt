@@ -17,19 +17,20 @@ package com.example.androiddevchallenge
 
 import android.os.Bundle
 import android.os.CountDownTimer
-import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
@@ -44,15 +45,20 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.androiddevchallenge.ui.theme.MyTheme
-import kotlinx.coroutines.channels.ticker
+import com.example.androiddevchallenge.ui.theme.limeGreen500
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
+import kotlin.time.ExperimentalTime
+import kotlin.time.milliseconds
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -66,7 +72,7 @@ class MainActivity : AppCompatActivity() {
 }
 
 class CountDownViewModel : ViewModel() {
-    val timeLeftLiveData = MutableLiveData(Long.MAX_VALUE)
+    val timeLeftLiveData = MutableLiveData<Long>()
     var countDownTimer: CountDownTimer? = null
 
     fun startCountdown(totalTime: Long) {
@@ -89,16 +95,23 @@ fun MyApp() {
     val timerViewModel: CountDownViewModel = viewModel()
     val timeLeft by timerViewModel.timeLeftLiveData.observeAsState()
 
-    Surface(color = MaterialTheme.colors.background) {
-        val totalTime = 5000L
+    Surface(
+        color = MaterialTheme.colors.background,
+        modifier = Modifier.fillMaxSize()
+    ) {
+        val totalTime = 10000L
+
         Column(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            TickMarks(timeLeft = timeLeft!!, totalTime = totalTime)
-            Button(onClick = {
-                timerViewModel.startCountdown(totalTime)
-            }) {
+            ClockUi(timeLeft = timeLeft ?: totalTime, totalTime = totalTime)
+
+            Button(
+                onClick = {
+                    timerViewModel.startCountdown(totalTime)
+                }
+            ) {
                 Text("Toggle")
             }
         }
@@ -106,12 +119,13 @@ fun MyApp() {
 }
 
 @Composable
-fun TickMarks(timeLeft: Long, totalTime: Long) {
+fun ClockUi(timeLeft: Long, totalTime: Long) {
     val numTicks = 60
     val timePerTick = totalTime / numTicks
     val timeElapsed = totalTime - timeLeft
 
     Box(
+        contentAlignment = Alignment.Center,
         modifier = Modifier
             .fillMaxWidth()
             .aspectRatio(1f)
@@ -120,7 +134,7 @@ fun TickMarks(timeLeft: Long, totalTime: Long) {
             val tickStart = timePerTick * i
             val tickEnd = timePerTick * (i + 1)
             val lineAngle by animateFloatAsState(
-                if (timeElapsed >= tickStart) 90f else 0f,
+                if (timeElapsed > tickStart) 90f else 0f,
                 animationSpec = tween(
                     easing = LinearEasing,
                     durationMillis = (tickEnd - tickStart).toInt()
@@ -131,6 +145,69 @@ fun TickMarks(timeLeft: Long, totalTime: Long) {
                 angle = i * -6,
                 lineAngle = lineAngle
             )
+        }
+
+        val state = TimerState.fromMillis(timeLeft)
+
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            TimerNumbers(state)
+            val annotatedLabel = buildAnnotatedString {
+                pushStyle(style = MaterialTheme.typography.h6.toSpanStyle())
+                append("SEC.")
+                pop()
+                pushStyle(
+                    style = MaterialTheme.typography.h6.toSpanStyle().copy(color = Color.Gray)
+                )
+                append(" REMAINING")
+                pop()
+            }
+            Text(text = annotatedLabel)
+        }
+    }
+}
+
+@Composable
+private fun TimerNumbers(state: TimerState) {
+    Row {
+        NumberColumn(state.seconds / 10)
+        NumberColumn(state.seconds % 10)
+        Text(
+            text = ":",
+            style = MaterialTheme.typography.h2,
+            modifier = Modifier.padding(horizontal = 8.dp)
+        )
+        NumberColumn(state.centiseconds / 10)
+        NumberColumn(state.centiseconds % 10)
+    }
+}
+
+@Composable
+private fun NumberColumn(number: Int) {
+    Text(
+        text = number.toString(),
+        style = MaterialTheme.typography.h2,
+        modifier = Modifier.width(48.dp),
+        textAlign = TextAlign.Center
+    )
+}
+
+data class TimerState(
+    val hours: Int,
+    val minutes: Int,
+    val seconds: Int,
+    val centiseconds: Int
+) {
+    companion object {
+        @OptIn(ExperimentalTime::class)
+        fun fromMillis(millis: Long): TimerState {
+            return millis.milliseconds.toComponents { hours, minutes, seconds, nanoseconds ->
+                TimerState(
+                    hours,
+                    minutes,
+                    seconds,
+                    nanoseconds / 1e7.toInt()
+                )
+            }
         }
     }
 }
@@ -147,7 +224,7 @@ fun TickMark(
             .rotate(-90f)
             .fillMaxSize()
             .drawBehind {
-                val startRadius = size.width / 2 * 0.7f
+                val startRadius = size.width / 2 * 0.72f
                 val endRadius = size.width / 2 * 0.8f
                 val startPos = Offset(
                     cos(theta) * startRadius,
@@ -166,10 +243,10 @@ fun TickMark(
 
                 rotate(lineAngle, center + midPos) {
                     drawLine(
-                        Color.Green,
+                        limeGreen500,
                         center + startPos,
                         center + endPos,
-                        15f
+                        12f
                     )
                 }
             }

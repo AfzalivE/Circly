@@ -17,14 +17,41 @@ package com.example.androiddevchallenge.ui.theme
 
 import androidx.compose.material.Typography
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import com.example.androiddevchallenge.R
+
+val exoFontFamily = FontFamily(
+    Font(
+        resId = R.font.exo_regular,
+        weight = FontWeight.Normal
+    ),
+    Font(
+        resId = R.font.exo_medium,
+        weight = FontWeight.Medium
+    )
+)
 
 // Set of Material typography styles to start with
 val typography = Typography(
+    defaultFontFamily = exoFontFamily,
+    h2 = TextStyle(
+        fontFamily = exoFontFamily,
+        fontWeight = FontWeight.Medium,
+        fontSize = 72.sp,
+        letterSpacing = (-0.5).sp
+
+    ),
+    h6 = TextStyle(
+        fontFamily = exoFontFamily,
+        fontWeight = FontWeight.Medium,
+        fontSize = 18.sp,
+        letterSpacing = 0.15.sp
+    ),
     body1 = TextStyle(
-        fontFamily = FontFamily.Default,
+        fontFamily = exoFontFamily,
         fontWeight = FontWeight.Normal,
         fontSize = 16.sp
     )
