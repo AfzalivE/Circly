@@ -51,7 +51,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.androiddevchallenge.CountDownViewModel.*
+import com.example.androiddevchallenge.CountDownViewModel.CountdownState
+import com.example.androiddevchallenge.CountDownViewModel.TimerState
 import com.example.androiddevchallenge.ui.theme.MyTheme
 import com.example.androiddevchallenge.ui.theme.limeGreen500
 import kotlinx.coroutines.delay
